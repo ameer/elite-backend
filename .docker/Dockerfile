@@ -17,8 +17,8 @@ ARG uid
 
 # Clear cache
 # RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN --network=host apk add --no-cache \
+RUN -it --add-host dl-cdn.alpinelinux.org:50.7.87.83 ubuntu cat /etc/hosts
+RUN  apk add --no-cache \
     oniguruma-dev
 	# supervisor
     # oniguruma-dev pcre-dev autoconf
