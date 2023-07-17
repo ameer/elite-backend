@@ -18,8 +18,8 @@ ARG uid
 # Clear cache
 # RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-#RUN apk add --no-cache \
-    #oniguruma-dev
+RUN --network=host apk add --no-cache \
+    oniguruma-dev
 	# supervisor
     # oniguruma-dev pcre-dev autoconf
 
