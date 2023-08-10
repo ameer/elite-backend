@@ -1,0 +1,116 @@
+version: "3.7"
+services:
+  websocket:
+    build:
+      args:
+        user: ubuntu
+        uid: 1000
+      context: ./elite-websocket/
+      dockerfile: ./.docker/Dockerfile
+      extra_hosts:
+          - "dl-cdn.alpinelinux.org:50.7.87.83"
+    image: elite-websocket
+    container_name: elite-websocket
+    restart: unless-stopped
+    working_dir: /var/www
+    ports:
+      - 6001:6001
+    volumes:
+      - ./elite-websocket:/var/www
+    networks:
+      - net
+
+  backend:
+    build:
+      args:
+        user: ubuntu
+        uid: 1000
+      context: ./
+      dockerfile: ./elite-backend/.docker/Dockerfile
+      extra_hosts:
+      - "dl-cdn.alpinelinux.org:50.7.87.83"
+    image: elite-backend
+    container_name: elite-backend
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    depends_on:
+      - cache
+      - db
+      - web_service
+    # ports:
+    #   - 6001:6001
+    volumes:
+      - ./elite-backend:/var/www/backend
+    networks:
+      - net
+
+  #frontend:
+  #   build:
+  #     args:
+  #       user: ubuntu
+  #       uid: 1000
+  #     context: ./
+  #     dockerfile: ./elite-frontend/.docker/Dockerfile
+  #   image: elite-frontend
+  #   container_name: elite-frontend
+  #   restart: unless-stopped
+  #   working_dir: /var/www/
+  #   depends_on:
+  #     - cache
+  #     - db
+  #     - web_service
+     # ports:
+     #   - 6001:6001
+  #   volumes:
+  #     - ./elite-frontend/build:/var/www
+  #   networks:
+  #     - net
+
+  db:
+    image: mysql:8.0
+    container_name: elite-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+      #- ./docker/data/mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - net
+
+  web_service:
+    image: nginx:alpine
+    container_name: elite-web
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - ./elite-backend:/var/www/backend
+      - ./elite-frontend/build:/var/www/frontend
+      - ./docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - net
+
+  cache:
+    image: redis:6.2-alpine
+    container_name: elite-cache
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - ./docker/data/cache:/data
+    networks:
+      - net
+
+networks:
+  net:
+    name: elite_net
+    driver: bridge
